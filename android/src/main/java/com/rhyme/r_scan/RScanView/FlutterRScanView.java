@@ -17,7 +17,6 @@ import androidx.camera.core.ImageAnalysisConfig;
 import androidx.camera.core.ImageProxy;
 import androidx.camera.core.Preview;
 import androidx.camera.core.PreviewConfig;
-import androidx.camera.core.SessionConfig;
 import androidx.camera.core.UseCase;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleOwner;
@@ -42,15 +41,16 @@ import io.flutter.plugin.platform.PlatformView;
 public class FlutterRScanView implements PlatformView, LifecycleOwner, EventChannel.StreamHandler, MethodChannel.MethodCallHandler {
     private static final String TAG = "FlutterRScanView";
 
-    private LifecycleRegistry lifecycleRegistry;
-    private TextureView textureView;
+    private final LifecycleRegistry lifecycleRegistry;
+    private final TextureView textureView;
     private boolean isPlay;
     private static final String scanViewType = "com.rhyme_lph/r_scan_view";
     private EventChannel.EventSink eventSink;
     private long lastCurrentTimestamp = 0L;//最后一次的扫描
-    private Preview mPreview;
+    private final Preview mPreview;
 
     FlutterRScanView(Context context, BinaryMessenger messenger, int i, Object o) {
+        @SuppressWarnings("rawtypes")
         Map map = (Map) o;
         Boolean _isPlay = (Boolean) map.get("isPlay");
         isPlay = _isPlay == Boolean.TRUE;
@@ -74,7 +74,7 @@ public class FlutterRScanView implements PlatformView, LifecycleOwner, EventChan
     @Override
     public View getView() {
         if (lifecycleRegistry.getCurrentState() != Lifecycle.State.RESUMED) {
-            lifecycleRegistry.markState(Lifecycle.State.RESUMED);
+            lifecycleRegistry.setCurrentState(Lifecycle.State.RESUMED);
         }
         return textureView;
     }
@@ -82,7 +82,7 @@ public class FlutterRScanView implements PlatformView, LifecycleOwner, EventChan
     @Override
     public void dispose() {
         Log.d("CameraX", "dispose");
-        lifecycleRegistry.markState(Lifecycle.State.DESTROYED);
+        lifecycleRegistry.setCurrentState(Lifecycle.State.DESTROYED);
         CameraX.unbindAll();
     }
 
@@ -135,12 +135,9 @@ public class FlutterRScanView implements PlatformView, LifecycleOwner, EventChan
                 .setTargetResolution(new Size(width, height))
                 .build();
         Preview preview = new Preview(config);
-        preview.setOnPreviewOutputUpdateListener(new Preview.OnPreviewOutputUpdateListener() {
-            @Override
-            public void onUpdated(@NonNull Preview.PreviewOutput output) {
-                if (textureView != null) {
-                    textureView.setSurfaceTexture(output.getSurfaceTexture());
-                }
+        preview.setOnPreviewOutputUpdateListener(output -> {
+            if (textureView != null) {
+                textureView.setSurfaceTexture(output.getSurfaceTexture());
             }
         });
         return preview;
@@ -160,7 +157,7 @@ public class FlutterRScanView implements PlatformView, LifecycleOwner, EventChan
 
     private class QRCodeAnalyzer implements ImageAnalysis.Analyzer {
         private static final String TAG = "QRCodeAnalyzer";
-        private MultiFormatReader reader = new MultiFormatReader();
+        private final MultiFormatReader reader = new MultiFormatReader();
 
         @Override
         public void analyze(ImageProxy image, int rotationDegrees) {
@@ -187,12 +184,9 @@ public class FlutterRScanView implements PlatformView, LifecycleOwner, EventChan
                 try {
                     final Result decode = reader.decode(binaryBitmap);
                     if (decode != null && eventSink != null) {
-                        textureView.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                if (eventSink != null)
-                                    eventSink.success(RScanResultUtils.toMap(decode));
-                            }
+                        textureView.post(() -> {
+                            if (eventSink != null)
+                                eventSink.success(RScanResultUtils.toMap(decode));
                         });
                     }
                 } catch (Exception e) {

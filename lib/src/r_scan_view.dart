@@ -16,7 +16,7 @@ typedef void ScanResultCallback(String result);
 /// qr scan view , it need to  require camera permission.
 @Deprecated("please use 'RScanCamera'")
 class RScanView extends StatefulWidget {
-  final RScanController controller;
+  final RScanController? controller;
 
   const RScanView({this.controller}) : assert(controller != null);
 
@@ -25,10 +25,10 @@ class RScanView extends StatefulWidget {
 }
 
 class _RScanViewState extends State<RScanView> {
-  RScanController _controller;
+  RScanController? _controller;
 
   void onPlatformViewCreated(int id) {
-    _controller.attach(id);
+    _controller?.attach(id);
   }
 
   @override
@@ -41,13 +41,13 @@ class _RScanViewState extends State<RScanView> {
   @override
   void dispose() {
     super.dispose();
-    _controller.detach();
+    _controller?.detach();
   }
 
   @override
   Widget build(BuildContext context) {
     dynamic params = {
-      "isPlay": _controller.isPlay,
+      "isPlay": _controller?.isPlay,
     };
     Widget child;
     if (Platform.isAndroid) {
@@ -78,12 +78,12 @@ class _RScanViewState extends State<RScanView> {
 /// can startScan or stopScan .
 @Deprecated("please use 'RScanCameraController'")
 class RScanController extends ChangeNotifier {
-  Stream _stream;
-  StreamSubscription _subscription;
-  RScanResult result;
-  EventChannel _channel;
-  bool isPlay;
-  MethodChannel _methodChannel;
+  Stream? _stream;
+  StreamSubscription? _subscription;
+  RScanResult? result;
+  EventChannel? _channel;
+  bool? isPlay;
+  MethodChannel? _methodChannel;
 
   RScanController({this.isPlay: true})
       : assert(isPlay != null),
@@ -92,12 +92,12 @@ class RScanController extends ChangeNotifier {
   void attach(int id) {
     _channel = EventChannel('${_scanType}_$id/event');
     _methodChannel = MethodChannel('${_scanType}_$id/method');
-    _stream = _channel.receiveBroadcastStream(
+    _stream = _channel?.receiveBroadcastStream(
       {
         "isPlay": isPlay,
       },
     );
-    _subscription = _stream.listen((data) {
+    _subscription = _stream?.listen((data) {
       this.result = RScanResult.formMap(data);
       notifyListeners();
     });
@@ -105,12 +105,12 @@ class RScanController extends ChangeNotifier {
 
   //开始扫描
   Future<void> startScan() async {
-    await _methodChannel.invokeMethod('startScan');
+    await _methodChannel?.invokeMethod('startScan');
   }
 
   //停止扫描
   Future<void> stopScan() async {
-    await _methodChannel.invokeMethod('stopScan');
+    await _methodChannel?.invokeMethod('stopScan');
   }
 
   /// flash mode open or close.
@@ -119,7 +119,7 @@ class RScanController extends ChangeNotifier {
   ///
   /// It will return is success.
   Future<bool> setFlashMode(bool isOpen) async =>
-      await _methodChannel.invokeMethod('setFlashMode', {
+      await _methodChannel?.invokeMethod('setFlashMode', {
         'isOpen': isOpen,
       });
 
@@ -129,7 +129,7 @@ class RScanController extends ChangeNotifier {
   ///
   /// It will return is success.
   Future<bool> getFlashMode() async =>
-      await _methodChannel.invokeMethod('getFlashMode');
+      await _methodChannel?.invokeMethod('getFlashMode');
 
   void detach() {
     _subscription?.cancel();

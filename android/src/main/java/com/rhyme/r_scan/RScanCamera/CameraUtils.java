@@ -26,6 +26,7 @@ public class CameraUtils {
             CameraCharacteristics characteristics = cameraManager.getCameraCharacteristics(cameraName);
             details.put("name", cameraName);
 
+            @SuppressWarnings("ConstantConditions") 
             int lensFacing = characteristics.get(CameraCharacteristics.LENS_FACING);
             switch (lensFacing) {
                 case CameraMetadata.LENS_FACING_FRONT:

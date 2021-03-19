@@ -5,20 +5,15 @@ import android.app.Activity;
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.SurfaceTexture;
-import android.hardware.Camera;
 import android.hardware.camera2.CameraAccessException;
 import android.hardware.camera2.CameraCaptureSession;
-import android.hardware.camera2.CameraCharacteristics;
 import android.hardware.camera2.CameraDevice;
 import android.hardware.camera2.CameraManager;
 import android.hardware.camera2.CameraMetadata;
 import android.hardware.camera2.CaptureRequest;
 import android.media.Image;
 import android.media.ImageReader;
-import android.media.MediaRecorder;
-import android.os.Build;
 import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.util.Size;
 import android.view.Surface;
@@ -42,7 +37,6 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-
 import io.flutter.plugin.common.MethodChannel;
 import io.flutter.view.TextureRegistry;
 
@@ -59,13 +53,13 @@ class RScanCamera {
     private CameraDevice cameraDevice;
     private CameraCaptureSession cameraCaptureSession;
     private ImageReader imageStreamReader;
-    private MultiFormatReader reader = new MultiFormatReader();
-    private RScanMessenger rScanMessenger;
+    private final MultiFormatReader reader = new MultiFormatReader();
+    private final RScanMessenger rScanMessenger;
     private CaptureRequest.Builder captureRequestBuilder;
     private boolean isPlay = true;
     private long lastCurrentTimestamp = 0L;//最后一次的扫描
-    private Handler handler = new Handler();
-    private Executor executor = Executors.newSingleThreadExecutor();
+    private final Handler handler = new Handler();
+    private final Executor executor = Executors.newSingleThreadExecutor();
     private boolean isAutoOpenFlash = false;
 
     // 上次环境亮度记录的索引
@@ -87,14 +81,13 @@ class RScanCamera {
         if (b) {
             captureRequestBuilder.set(
                     CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_TORCH);
-            cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
 
         } else {
             captureRequestBuilder.set(
                     CaptureRequest.FLASH_MODE, CameraMetadata.FLASH_MODE_OFF);
-            cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
 
         }
+        cameraCaptureSession.setRepeatingRequest(captureRequestBuilder.build(), null, null);
     }
 
     void setAutoFlash(boolean b) {
@@ -104,6 +97,7 @@ class RScanCamera {
 
     boolean isTorchOn() {
         try {
+            //noinspection ConstantConditions
             return captureRequestBuilder.get(CaptureRequest.FLASH_MODE) != CaptureRequest.FLASH_MODE_OFF;
         } catch (NullPointerException e) {
             return false;
@@ -363,83 +357,65 @@ class RScanCamera {
         return null;
     }
 
-
     private synchronized void startPreviewWithImageStream()
             throws CameraAccessException {
         createCaptureSession(imageStreamReader.getSurface());
 
-        imageStreamReader.setOnImageAvailableListener(new ImageReader.OnImageAvailableListener() {
-            @Override
-            public void onImageAvailable(ImageReader imageReader) {
-                executor.execute(new Runnable() {
-                    @Override
-                    public void run() {
-                        long currentTimestamp = System.currentTimeMillis();
-                        if (currentTimestamp - lastCurrentTimestamp >= 1L && isPlay == Boolean.TRUE) {
-                            Image image = imageReader.acquireLatestImage();
-                            if (image == null) return;
-                            if (ImageFormat.YUV_420_888 != image.getFormat()) {
-                                Log.d(TAG, "analyze: " + image.getFormat());
-                                return;
-                            }
-                            ByteBuffer buffer = image.getPlanes()[0].getBuffer();
-                            byte[] array = new byte[buffer.remaining()];
-                            buffer.get(array);
-                            int height = image.getHeight();
-                            int width = image.getWidth();
-                            //优先图片翻转解析（主要解决习惯性竖屏扫条码问题，二维码不受影响）
-                            PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(getRotatedData(array, width, height),
-                                    height,
-                                    width,
-                                    0,
-                                    0,
-                                    height,
-                                    width,
-                                    true);
-                            BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
-                            try {
-                                final Result decode = reader.decode(binaryBitmap);
-                                if (decode != null) {
-                                    handler.post(new Runnable() {
-                                        @Override
-                                        public void run() {
-                                            rScanMessenger.send(decode);
-                                        }
-                                    });
-                                }
-                            } catch (NotFoundException e) {
-                                //原图解析
-                                source = new PlanarYUVLuminanceSource(array,
-                                        width,
-                                        height,
-                                        0,
-                                        0,
-                                        width,
-                                        height,
-                                        false);
-                                binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
-                                try {
-                                    final Result decode = reader.decode(binaryBitmap);
-                                    if (decode != null) {
-                                        handler.post(new Runnable() {
-                                            @Override
-                                            public void run() {
-                                                rScanMessenger.send(decode);
-                                            }
-                                        });
-                                    }
-                                } catch (Exception e1) {
-                                    buffer.clear();
-                                }
-                            } catch (Exception e) {
-                                buffer.clear();
-                            }
-                            lastCurrentTimestamp = currentTimestamp;
-                            image.close();
-                        }
+        imageStreamReader.setOnImageAvailableListener(imageReader -> executor.execute(() -> {
+            long currentTimestamp = System.currentTimeMillis();
+            if (currentTimestamp - lastCurrentTimestamp >= 1L && isPlay == Boolean.TRUE) {
+                Image image = imageReader.acquireLatestImage();
+                if (image == null) return;
+                if (ImageFormat.YUV_420_888 != image.getFormat()) {
+                    Log.d(TAG, "analyze: " + image.getFormat());
+                    return;
+                }
+                ByteBuffer buffer = image.getPlanes()[0].getBuffer();
+                byte[] array = new byte[buffer.remaining()];
+                buffer.get(array);
+                int height = image.getHeight();
+                int width = image.getWidth();
+                //优先图片翻转解析（主要解决习惯性竖屏扫条码问题，二维码不受影响）
+                PlanarYUVLuminanceSource source = new PlanarYUVLuminanceSource(getRotatedData(array, width, height),
+                        height,
+                        width,
+                        0,
+                        0,
+                        height,
+                        width,
+                        true);
+                BinaryBitmap binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
+                try {
+                    final Result decode = reader.decode(binaryBitmap);
+                    if (decode != null) {
+                        handler.post(() -> rScanMessenger.send(decode));
                     }
-                });
-            }}, handler);
+                } catch (NotFoundException e) {
+                    //原图解析
+                    source = new PlanarYUVLuminanceSource(array,
+                            width,
+                            height,
+                            0,
+                            0,
+                            width,
+                            height,
+                            false);
+                    binaryBitmap = new BinaryBitmap(new HybridBinarizer(source));
+                    try {
+                        final Result decode = reader.decode(binaryBitmap);
+                        if (decode != null) {
+                            handler.post(() -> rScanMessenger.send(decode));
+                        }
+                    } catch (Exception e1) {
+                        buffer.clear();
+                    }
+                } catch (Exception e) {
+                    buffer.clear();
+                }
+                lastCurrentTimestamp = currentTimestamp;
+                image.close();
+            }
+        }), handler);
     }
 
     private byte[] getRotatedData(byte[] data, int width, int height) {

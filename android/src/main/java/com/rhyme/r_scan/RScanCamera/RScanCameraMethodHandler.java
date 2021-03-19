@@ -3,13 +3,8 @@ package com.rhyme.r_scan.RScanCamera;
 
 import android.app.Activity;
 import android.hardware.camera2.CameraAccessException;
-import android.util.Log;
 
 import androidx.annotation.NonNull;
-import androidx.camera.core.CameraX;
-import androidx.lifecycle.Lifecycle;
-import androidx.lifecycle.LifecycleOwner;
-
 
 import io.flutter.plugin.common.BinaryMessenger;
 import io.flutter.plugin.common.MethodCall;
@@ -95,10 +90,8 @@ public class RScanCameraMethodHandler implements MethodChannel.MethodCallHandler
                 Boolean isAuto = call.<Boolean>argument("isAuto");
                 if (rScanCamera != null) {
                     rScanCamera.setAutoFlash(isAuto == Boolean.TRUE);
-                    result.success(true);
-                } else {
-                    result.success(true);
                 }
+                result.success(true);
                 break;
             case "setFlashMode":
                 Boolean isOpen = call.<Boolean>argument("isOpen");
@@ -108,10 +101,8 @@ public class RScanCameraMethodHandler implements MethodChannel.MethodCallHandler
                     } catch (CameraAccessException e) {
                         e.printStackTrace();
                     }
-                    result.success(true);
-                } else {
-                    result.success(true);
                 }
+                result.success(true);
                 break;
             case "getFlashMode":
                 if (rScanCamera != null) {

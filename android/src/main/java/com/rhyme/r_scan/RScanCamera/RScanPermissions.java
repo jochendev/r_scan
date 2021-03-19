@@ -30,12 +30,9 @@ public final class RScanPermissions {
         }
         if (!hasCameraPermission(activity)) {
             permissionsRegistry.addListener(
-                    new RScanRequestPermissionsListener(new ResultCallback() {
-                        @Override
-                        public void onResult(String errorCode, String errorDescription) {
-                            ongoing = false;
-                            callback.onResult(errorCode, errorDescription);
-                        }
+                    new RScanRequestPermissionsListener((errorCode, errorDescription) -> {
+                        ongoing = false;
+                        callback.onResult(errorCode, errorDescription);
                     }));
             ongoing = true;
             ActivityCompat.requestPermissions(

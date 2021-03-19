@@ -3,7 +3,7 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:r_scan_example/scan_dialog.dart';
 import 'package:r_scan/src/r_scan_camera.dart';
 
-List<RScanCameraDescription> rScanCameras;
+List<RScanCameraDescription>? rScanCameras;
 
 class RScanCameraDialog extends StatefulWidget {
   @override
@@ -11,31 +11,29 @@ class RScanCameraDialog extends StatefulWidget {
 }
 
 class _RScanCameraDialogState extends State<RScanCameraDialog> {
-  RScanCameraController _controller;
+  RScanCameraController? _controller;
   bool isFirst = true;
 
   void initCamera() async {
-    if (rScanCameras == null || rScanCameras.length == 0) {
-      final result = await PermissionHandler()
-          .checkPermissionStatus(PermissionGroup.camera);
-      if (result == PermissionStatus.granted) {
+    if (rScanCameras == null || rScanCameras?.length == 0) {
+      final isGranted = await Permission.camera.isGranted;
+      if (isGranted) {
         rScanCameras = await availableRScanCameras();
-        print('返回可用的相机：${rScanCameras.join('\n')}');
+        print('返回可用的相机：${rScanCameras?.join('\n')}');
       } else {
-        final resultMap = await PermissionHandler()
-            .requestPermissions([PermissionGroup.camera]);
-        if (resultMap[PermissionGroup.camera] == PermissionStatus.granted) {
+        final status = await Permission.camera.request();
+        if (status.isGranted) {
           rScanCameras = await availableRScanCameras();
         } else {
           print('相机权限被拒绝，无法使用');
         }
       }
     }
-    if (rScanCameras != null && rScanCameras.length > 0) {
+    if (rScanCameras != null && rScanCameras!.length > 0) {
       _controller = RScanCameraController(
-          rScanCameras[0], RScanCameraResolutionPreset.high)
+          rScanCameras![0], RScanCameraResolutionPreset.high)
         ..addListener(() {
-          final result = _controller.result;
+          final result = _controller?.result;
           if (result != null) {
             if (isFirst) {
               Navigator.of(context).pop(result);
@@ -66,7 +64,7 @@ class _RScanCameraDialogState extends State<RScanCameraDialog> {
 
   @override
   Widget build(BuildContext context) {
-    if (rScanCameras == null || rScanCameras.length == 0) {
+    if (rScanCameras == null || rScanCameras!.length == 0) {
       return Scaffold(
         body: Container(
           alignment: Alignment.center,
@@ -74,7 +72,7 @@ class _RScanCameraDialogState extends State<RScanCameraDialog> {
         ),
       );
     }
-    if (!_controller.value.isInitialized) {
+    if (_controller?.value.isInitialized != true) {
       return Container();
     }
     return Scaffold(
@@ -83,8 +81,8 @@ class _RScanCameraDialogState extends State<RScanCameraDialog> {
         children: <Widget>[
           ScanImageView(
             child: AspectRatio(
-              aspectRatio: _controller.value.aspectRatio,
-              child: RScanCamera(_controller),
+              aspectRatio: _controller!.value.aspectRatio,
+              child: RScanCamera(_controller!),
             ),
           ),
           Align(
@@ -101,7 +99,7 @@ class _RScanCameraDialogState extends State<RScanCameraDialog> {
   Future<bool> getFlashMode() async {
     bool isOpen = false;
     try {
-      isOpen = await _controller.getFlashMode();
+      isOpen = await _controller!.getFlashMode();
     } catch (_) {}
     return isOpen;
   }
@@ -112,14 +110,15 @@ class _RScanCameraDialogState extends State<RScanCameraDialog> {
             padding: EdgeInsets.only(
                 bottom: 24 + MediaQuery.of(context).padding.bottom),
             child: IconButton(
-                icon: Icon(snapshot.data ? Icons.flash_on : Icons.flash_off),
+                icon: Icon(snapshot.data == true ? Icons.flash_on : Icons
+                    .flash_off),
                 color: Colors.white,
                 iconSize: 46,
                 onPressed: () {
-                  if (snapshot.data) {
-                    _controller.setFlashMode(false);
+                  if (snapshot.data == true) {
+                    _controller?.setFlashMode(false);
                   } else {
-                    _controller.setFlashMode(true);
+                    _controller?.setFlashMode(true);
                   }
                   setState(() {});
                 }),

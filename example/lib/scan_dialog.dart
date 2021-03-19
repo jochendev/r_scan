@@ -8,7 +8,7 @@ class RScanDialog extends StatefulWidget {
 }
 
 class _RScanDialogState extends State<RScanDialog> {
-  RScanController _controller;
+  RScanController? _controller;
 
   @override
   void initState() {
@@ -20,8 +20,8 @@ class _RScanDialogState extends State<RScanDialog> {
 
   Future<void> initController() async {
     _controller = RScanController();
-    _controller.addListener(() {
-      final result = _controller.result;
+    _controller?.addListener(() {
+      final result = _controller?.result;
       if (result != null) {
         if (isFirst) {
           Navigator.of(context).pop(result);
@@ -65,21 +65,17 @@ class _RScanDialogState extends State<RScanDialog> {
   Future<bool> getFlashMode() async {
     bool isOpen = false;
     try {
-      isOpen = await _controller.getFlashMode();
+      isOpen = await _controller!.getFlashMode();
     } catch (_) {}
     return isOpen;
   }
 
   Future<bool> canOpenCameraView() async {
-    var status =
-        await PermissionHandler().checkPermissionStatus(PermissionGroup.camera);
-    if (status != PermissionStatus.granted) {
-      var future = await PermissionHandler()
-          .requestPermissions([PermissionGroup.camera]);
-      for (final item in future.entries) {
-        if (item.value != PermissionStatus.granted) {
-          return false;
-        }
+    var isGranted = await Permission.camera.isGranted;
+    if (isGranted) {
+      var status = await Permission.camera.request();
+      if (status.isGranted) {
+        return false;
       }
     } else {
       return true;
@@ -93,14 +89,15 @@ class _RScanDialogState extends State<RScanDialog> {
             padding: EdgeInsets.only(
                 bottom: 24 + MediaQuery.of(context).padding.bottom),
             child: IconButton(
-                icon: Icon(snapshot.data ? Icons.flash_on : Icons.flash_off),
+                icon: Icon(snapshot.data == true ? Icons.flash_on : Icons
+                    .flash_off),
                 color: Colors.white,
                 iconSize: 46,
                 onPressed: () {
-                  if (snapshot.data) {
-                    _controller.setFlashMode(false);
+                  if (snapshot.data == true) {
+                    _controller?.setFlashMode(false);
                   } else {
-                    _controller.setFlashMode(true);
+                    _controller?.setFlashMode(true);
                   }
                   setState(() {});
                 }),
@@ -110,9 +107,9 @@ class _RScanDialogState extends State<RScanDialog> {
 }
 
 class ScanImageView extends StatefulWidget {
-  final Widget child;
+  final Widget? child;
 
-  const ScanImageView({Key key, this.child}) : super(key: key);
+  const ScanImageView({Key? key, this.child}) : super(key: key);
 
   @override
   _ScanImageViewState createState() => _ScanImageViewState();
@@ -120,7 +117,7 @@ class ScanImageView extends StatefulWidget {
 
 class _ScanImageViewState extends State<ScanImageView>
     with TickerProviderStateMixin {
-  AnimationController controller;
+  late AnimationController controller;
 
   @override
   void initState() {
@@ -140,7 +137,7 @@ class _ScanImageViewState extends State<ScanImageView>
   Widget build(BuildContext context) {
     return AnimatedBuilder(
         animation: controller,
-        builder: (BuildContext context, Widget child) => CustomPaint(
+        builder: (BuildContext context, Widget? child) => CustomPaint(
               foregroundPainter:
                   _ScanPainter(controller.value, Colors.white, Colors.green),
               child: widget.child,
@@ -150,13 +147,13 @@ class _ScanImageViewState extends State<ScanImageView>
 }
 
 class _ScanPainter extends CustomPainter {
-  final double value;
-  final Color borderColor;
-  final Color scanColor;
+  final double? value;
+  final Color? borderColor;
+  final Color? scanColor;
 
   _ScanPainter(this.value, this.borderColor, this.scanColor);
 
-  Paint _paint;
+  Paint? _paint;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -173,39 +170,39 @@ class _ScanPainter extends CustomPainter {
     double top = boxHeight;
     double bottom = boxHeight * 2;
     double right = left + boxWidth;
-    _paint.color = borderColor;
+    _paint!.color = borderColor!;
     final rect = Rect.fromLTWH(left, top, boxWidth, boxHeight);
-    canvas.drawRect(rect, _paint);
+    canvas.drawRect(rect, _paint!);
 
-    _paint.strokeWidth = 3;
+    _paint!.strokeWidth = 3;
 
     Path path1 = Path()
       ..moveTo(left, top + 10)
       ..lineTo(left, top)
       ..lineTo(left + 10, top);
-    canvas.drawPath(path1, _paint);
+    canvas.drawPath(path1, _paint!);
     Path path2 = Path()
       ..moveTo(left, bottom - 10)
       ..lineTo(left, bottom)
       ..lineTo(left + 10, bottom);
-    canvas.drawPath(path2, _paint);
+    canvas.drawPath(path2, _paint!);
     Path path3 = Path()
       ..moveTo(right, bottom - 10)
       ..lineTo(right, bottom)
       ..lineTo(right - 10, bottom);
-    canvas.drawPath(path3, _paint);
+    canvas.drawPath(path3, _paint!);
     Path path4 = Path()
       ..moveTo(right, top + 10)
       ..lineTo(right, top)
       ..lineTo(right - 10, top);
-    canvas.drawPath(path4, _paint);
+    canvas.drawPath(path4, _paint!);
 
-    _paint.color = scanColor;
+    _paint!.color = scanColor!;
 
     final scanRect = Rect.fromLTWH(
-        left + 10, top + 10 + (value * (boxHeight - 20)), boxWidth - 20, 3);
+        left + 10, top + 10 + (value! * (boxHeight - 20)), boxWidth - 20, 3);
 
-    _paint.shader = LinearGradient(colors: <Color>[
+    _paint!.shader = LinearGradient(colors: <Color>[
       Colors.white54,
       Colors.white,
       Colors.white54,
@@ -214,7 +211,7 @@ class _ScanPainter extends CustomPainter {
       0.5,
       1,
     ]).createShader(scanRect);
-    canvas.drawRect(scanRect, _paint);
+    canvas.drawRect(scanRect, _paint!);
   }
 
   @override

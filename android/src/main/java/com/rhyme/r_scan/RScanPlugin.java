@@ -18,41 +18,12 @@ import io.flutter.view.TextureRegistry;
 /**
  * RScanPlugin
  */
-//public class RScanPlugin implements MethodChannel.MethodCallHandler {
-//    private ImageScanHelper scanHelper;
-//
-//    private RScanPlugin(Registrar registrar) {
-//        scanHelper = new ImageScanHelper(registrar.context());
-//    }
-//
-//    public static void registerWith(Registrar registrar) {
-//        final MethodChannel channel = new MethodChannel(registrar.messenger(), "r_scan");
-//        channel.setMethodCallHandler(new RScanPlugin(registrar));
-//        RScanViewPlugin.registerWith(registrar);
-//    }
-//
-//    @Override
-//    public void onMethodCall(MethodCall call, Result result) {
-//        if (call.method.equals("scanImagePath")) {
-//            scanHelper.scanImagePath(call,result);
-//        } else if(call.method.equals("scanImageUrl")){
-//            scanHelper.scanImageUrl(call,result);
-//        } else if(call.method.equals("scanImageMemory")){
-//            scanHelper.scanImageMemory(call,result);
-//        } else {
-//            result.notImplemented();
-//        }
-//    }
-//}
-
-/**
- * RScanPlugin
- */
 public class RScanPlugin implements FlutterPlugin, ActivityAware {
     private MethodCallHandlerImpl methodCallHandler;
     private FlutterPluginBinding flutterPluginBinding;
 
 
+    @SuppressWarnings("deprecation")
     public static void registerWith(Registrar registrar) {
         RScanPlugin plugin = new RScanPlugin();
         plugin.maybeStartListening(
